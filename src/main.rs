@@ -2,7 +2,7 @@ use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use clap::{Arg, App};
 use iz80::*;
@@ -292,7 +292,12 @@ fn main() {
     // Run the emulation
     cpu.registers().set_pc(binary_address);
     cpu.set_trace(cpu_trace);
-    let mut n = 0;
+
+    let start_time = Instant::now();
+    let mut instructions = 0u64;
+    let mut clocks = 0u64;
+    let mut slow_time = start_time;
+    let mut slow_clocks = clocks;
     loop {
         cpu.execute_instruction(&mut machine);
 
@@ -355,12 +360,28 @@ fn main() {
 
         }
 
+        instructions += 1;
+
+        let instruction_clocks = 6; //TODO: calculate based on instruction
+        clocks += instruction_clocks;
+
         if slow {
-            n += 1;
-            if n > 20 {
-                thread::sleep(Duration::from_nanos(1000));
-                n = 0;
+            // Lock to 4 MHz
+            if (clocks - slow_clocks) >= 40000 {
+                let elapsed = slow_time.elapsed();
+                let period = Duration::from_millis(10);
+                if elapsed < period {
+                    thread::sleep(period - elapsed);
+                }
+                slow_time = Instant::now();
+                slow_clocks = clocks;
             }
         }
     }
+
+    let elapsed = start_time.elapsed();
+    eprintln!();
+    eprintln!("{:.3} s", elapsed.as_secs_f64());
+    eprintln!("{:.3} MHz", ((clocks as f64) / elapsed.as_secs_f64()) / 1000000.0);
+    eprintln!("{:.3} MIPS", ((instructions as f64) / elapsed.as_secs_f64()) / 1000000.0);
 }
