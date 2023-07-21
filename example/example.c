@@ -39,6 +39,14 @@ uint16_t bdos(uint8_t func, uint16_t param) __naked {
     __endasm;
 }
 
+void exit(void) {
+    bdos(0, 0);
+}
+
+char getchar(void) {
+    return bdos(6, 0xFF);
+}
+
 void putchar(char c) {
     bdos(6, c);
 }
@@ -46,7 +54,7 @@ void putchar(char c) {
 void puts(const char * s) {
     char c;
     while(c = *s++) {
-        bdos(6, c);
+        putchar(c);
     }
 }
 
@@ -183,7 +191,7 @@ void main(void) {
 
         cursor_position(13, 0);
 
-        char c = bdos(6, 0xFF);
+        char c = getchar();
         if (c == 'q') {
             break;
         }
@@ -193,6 +201,5 @@ void main(void) {
 
     clear_screen();
 
-    // Exit program
-    bdos(0, 0);
+    exit();
 }
