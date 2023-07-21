@@ -3,7 +3,14 @@ build/example.com: build/example.ihx
 
 build/example.ihx: example.c
 	mkdir -p build
-	sdcc -mz80 --code-loc 0x100 --no-std-crt0 -o $@ $<
+	sdcc \
+		-mz80 \
+		--code-loc 0x100 \
+		--data-loc 0x2000 \
+		--stack-loc 0x4000 \
+		--no-std-crt0 \
+		-o $@ \
+		$<
 
 build/example.img: build/example.com
 	rm -f $@.partial

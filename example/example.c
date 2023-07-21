@@ -2,8 +2,11 @@
 
 void main(void);
 
-void start(void) {
-    main();
+void start(void) __naked {
+    __asm
+    ld sp, #0x4000  // Set stack pointer to 16 KiB
+    jp _main        // Jump to main function
+    __endasm;
 }
 
 uint16_t bdos(uint8_t func, uint16_t param) __naked {
@@ -12,15 +15,26 @@ uint16_t bdos(uint8_t func, uint16_t param) __naked {
     param;
 
     __asm
-        ld iy,#2
-        add iy,sp ;Bypass the return address of the function 
+        push iy
+        ld iy, #4
+        add iy, sp
+        push ix
+        // HL not saved as it is return value
+        push de
+        push bc
+        push af
 
-        ld c,(iy)   ;func
-        ld e,1(iy)  ;param
-        ld d,2(iy)  ;param
+        ld c, (iy)   // func
+        ld e,1(iy)  // param (low)
+        ld d,2(iy)  // param (high)
+        call 5        // Call BDOS
 
-        call 5 ;Call BDOS
-
+        pop af
+        pop bc
+        pop de
+        // HL not restored as it is return value
+        pop ix
+        pop iy
         ret
     __endasm;
 }
@@ -41,6 +55,7 @@ void clear_screen(void){
 }
 
 void cursor_position(uint8_t x, uint8_t y) {
+    // Position cursor
     putchar(0x1B);
     putchar('=');
     //TODO: ensure y <= 80
@@ -59,8 +74,10 @@ void cursor_position(uint8_t x, uint8_t y) {
 
 void delay_frame(void) __naked {
     __asm
-        ld de, #LOOPS_PER_FRAME
+        push de
+        push af
 
+        ld de, #LOOPS_PER_FRAME
     loop:           // Clocks per instruction: http://www.z80.info/z80time.txt
         dec de      // 6 clocks
         ld a, d     // 4 clocks
@@ -68,6 +85,8 @@ void delay_frame(void) __naked {
         jp nz, loop // 10 clocks
                     // 24 clocks total
 
+        pop af
+        pop de
         ret
     __endasm;
 }
@@ -88,7 +107,6 @@ struct Ball {
 };
 
 #define BALLS 3
-struct Ball balls[BALLS];
 
 void main(void) {
     //delay_ms(1000);
@@ -97,6 +115,8 @@ void main(void) {
     clear_screen();
 
     puts("CP/M Physics");
+
+    struct Ball balls[BALLS];
 
     // Initialize balls
     for (int i = 0; i < BALLS; i++) {
@@ -109,7 +129,6 @@ void main(void) {
         ball->ax = 0;
         ball->ay = (1 << 8) / 8;
     }
-
 
     balls[0].c = 'o';
     balls[0].x = (4 << 8);
@@ -173,4 +192,7 @@ void main(void) {
     }
 
     clear_screen();
+
+    // Exit program
+    bdos(0, 0);
 }
