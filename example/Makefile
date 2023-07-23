@@ -1,7 +1,9 @@
-build/example.com: build/example.ihx
+all: build/example.imd
+
+build/%.com: build/%.ihx
 	objcopy -Iihex -Obinary $< $@
 
-build/example.ihx: example.c
+build/%.ihx: %.c
 	mkdir -p build
 	sdcc \
 		-mz80 \
@@ -12,11 +14,13 @@ build/example.ihx: example.c
 		-o $@ \
 		$<
 
-build/example.img: build/example.com
+build/example.img: build/occ1demo.com build/physics.com
 	rm -f $@.partial
 	env HOME=$(PWD) dskform -type raw -format osb1sssd $@.partial
 	mkfs.cpm -f osb1sssd $@.partial
-	cpmcp -f osb1sssd $@.partial $< 0:example.com
+	for file in $^; do \
+	cpmcp -f osb1sssd $@.partial $$file 0:$$(basename $$file); \
+	done
 	mv $@.partial $@
 
 build/example.imd: build/example.img
@@ -30,6 +34,6 @@ clean:
 mame: build/example.imd
 	mame osborne1 -floppydisk1 cpm22 -floppydisk2 $<
 
-run: build/example.com
+run: build/physics.com
 	cargo build --release --manifest-path ../Cargo.toml
 	../target/release/iz-cpm --slow $<
