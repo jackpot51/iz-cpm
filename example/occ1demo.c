@@ -20,6 +20,8 @@ void main(void) {
         vram[y * 128 + x] = (uint8_t)i;
     }
 
+#include "occ1/program.asm"
+
     // Clocks per instruction: http://www.z80.info/z80time.txt
     __asm
         push hl
