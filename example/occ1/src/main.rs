@@ -54,7 +54,7 @@ fn main() {
 
     use image::{self, imageops::*, GenericImageView, Luma};
     const COLS: usize = 17; // 52 is maximum, adjust for cycles
-    const ROWS: usize = 24; // 24 is maximum
+    const ROWS: usize = 17; // 24 is maximum
     const CELL_WIDTH: usize = 8;
     const CELL_HEIGHT: usize = 10;
     const SCALE_X: usize = 1; // 4 to remove artifacts, 1 to increase apparent resolution
@@ -88,12 +88,6 @@ fn main() {
     }
 
     let mut asm = String::new();
-    writeln!(asm, "__asm");
-
-    writeln!(asm, "imageloop:");
-    writeln!(asm, "ei // Enable interrupts");
-    writeln!(asm, "halt // Wait for next interrupt");
-    writeln!(asm, "di // Disable interrupts");
 
     let mut matched = image.clone();
     for (row, line) in image.iter().enumerate() {
@@ -165,8 +159,6 @@ fn main() {
         writeln!(asm, "// total cycles {}", cycles);
     }
 
-    writeln!(asm, "jp imageloop");
-    writeln!(asm, "__endasm;");
     fs::write("program.asm", asm).unwrap();
 
     use std::num::NonZeroU32;
